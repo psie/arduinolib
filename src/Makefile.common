@@ -1,11 +1,16 @@
 SHELL = /bin/bash
+OS = $(shell uname)
 
 # Microcontroller settings
 MCU = atmega328p
 F_CPU = 16000000
 
 # Device for programmer
-PORT = $(wildcard /dev/tty.usbmodemf*)
+ifeq ($(OS), Linux)
+	PORT = $(wildcard /dev/ttyACM*)
+else
+	PORT = $(wildcard /dev/tty.usbmodemf*)
+endif
 
 AR      = avr-ar
 AS      = avr-as
@@ -22,6 +27,12 @@ CPPFLAGS = -DF_CPU=$(F_CPU)
 CXXFLAGS = $(CFLAGS) -std=c++11 -fno-rtti
 LDFLAGS  =
 LDLIBS   =
+
+ifeq ($(OS), Linux)
+	SEDI = sed -i
+else # OS X sed
+	SEDI = sed -i ""
+endif
 
 FMT = "%6s  %-32s { %s }\n"
 
@@ -64,11 +75,11 @@ install-%: %.hex
 
 %.d: %.c
 	$(CC) -MD -MM $(CPPFLAGS) -o $@ $<
-	sed -i "" -e "s,\($*\)\.o[ :]*,\1.o $@ : ,g" $@
+	$(SEDI) -e "s,\($*\)\.o[ :]*,\1.o $@ : ,g" $@
 
 %.d: %.cpp
 	$(CXX) -MD -MM $(CPPFLAGS) -o $@ $<
-	sed -i "" -e "s,\($*\)\.o[ :]*,\1.o $@ : ,g" $@
+	$(SEDI) -e "s,\($*\)\.o[ :]*,\1.o $@ : ,g" $@
 
 clean::
 	rm -vf *.{elf,hex,d,o,a,map,lst,rpo} *~
